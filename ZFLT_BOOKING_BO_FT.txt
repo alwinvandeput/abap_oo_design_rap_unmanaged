@@ -1,0 +1,135 @@
+CLASS zflt_booking_bo_ft DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+
+    INTERFACES zflt_booking_bo_ft_if.
+
+    CLASS-METHODS get_factory_instance
+      RETURNING VALUE(r_booking_bo_ft) TYPE REF TO zflt_booking_bo_ft_if.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    CLASS-DATA booking_bo_ft TYPE REF TO zflt_booking_bo_ft.
+
+    TYPES:
+      BEGIN OF bo_instance,
+        bo_key      TYPE string,
+        bo_instance TYPE REF TO zflt_booking_bo,
+      END OF bo_instance.
+
+    DATA bo_buffer_instance_list TYPE STANDARD TABLE OF bo_instance.
+
+ENDCLASS.
+
+CLASS zflt_booking_bo_ft IMPLEMENTATION.
+
+  METHOD get_factory_instance.
+
+    IF booking_bo_ft IS INITIAL.
+      booking_bo_ft = NEW zflt_booking_bo_ft( ).
+    ENDIF.
+
+    r_booking_bo_ft = booking_bo_ft.
+
+  ENDMETHOD.
+
+  METHOD zflt_booking_bo_ft_if~create_booking_instance.
+
+    SELECT SINGLE MAX( booking )
+      FROM ztbooking_zzap
+      INTO @DATA(lv_max_booking_no).
+
+    DATA(bo_instance) = NEW zflt_booking_bo( ).
+
+    return_bo_instance = bo_instance.
+
+    bo_instance->booking_data = booking_data.
+
+    bo_instance->booking_data-booking = lv_max_booking_no + 1.
+
+    GET TIME STAMP FIELD DATA(zv_tsl).
+    bo_instance->booking_data-lastchangedat = zv_tsl.
+
+    APPEND VALUE #(
+       bo_key      = booking_data-booking
+       bo_instance = bo_instance )
+       TO bo_buffer_instance_list.
+
+  ENDMETHOD.
+
+  METHOD zflt_booking_bo_ft_if~get_booking_instance_by_key.
+
+    READ TABLE bo_buffer_instance_list
+      WITH KEY bo_key = bo_key
+      ASSIGNING FIELD-SYMBOL(<buffer_instance>).
+
+    IF sy-subrc = 0.
+
+      return_bo_instance = <buffer_instance>-bo_instance.
+      RETURN.
+
+    ENDIF.
+
+    "TODO
+    DATA(data_provider) = zflt_booking_bo_dp=>get_instance( bo_key ).
+
+    DATA(booking_data) = data_provider->get_bo_data( ).
+
+    DATA(bo_instance) = NEW zflt_booking_bo( ).
+    bo_instance->booking_data = booking_data.
+
+    bo_instance->_rap_set_read( ).
+
+    IF buffer_ind = abap_true.
+
+      APPEND VALUE #(
+        bo_key      = booking_data-booking
+        bo_instance = bo_instance )
+        TO bo_buffer_instance_list.
+
+    ENDIF.
+
+    return_bo_instance = bo_instance.
+
+  ENDMETHOD.
+
+  METHOD zflt_booking_bo_ft_if~save.
+
+    LOOP AT  bo_buffer_instance_list
+      ASSIGNING FIELD-SYMBOL(<bo_buffer_instance>).
+
+      DATA(bo_state) = <bo_buffer_instance>-bo_instance->_rap_get_state( ).
+
+      CASE bo_state.
+
+        WHEN zflt_booking_bo=>persistence_states-new.
+
+          INSERT ztbooking_zzap FROM @<bo_buffer_instance>-bo_instance->booking_data.
+
+        WHEN zflt_booking_bo=>persistence_states-update.
+
+          UPDATE ztbooking_zzap FROM @<bo_buffer_instance>-bo_instance->booking_data.
+
+        WHEN zflt_booking_bo=>persistence_states-read.
+
+          "Do nothing
+
+        WHEN zflt_booking_bo=>persistence_states-delete.
+
+          DELETE ztbooking_zzap FROM @<bo_buffer_instance>-bo_instance->booking_data.
+
+        WHEN zflt_booking_bo=>persistence_states-new_delete.
+
+
+      ENDCASE.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+ENDCLASS.

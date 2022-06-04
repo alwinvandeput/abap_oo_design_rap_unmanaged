@@ -1,0 +1,145 @@
+CLASS lcl_handler DEFINITION FINAL INHERITING FROM cl_abap_behavior_handler.
+  PRIVATE SECTION.
+
+    METHODS get_instance_authorizations FOR INSTANCE AUTHORIZATION
+      IMPORTING keys REQUEST requested_authorizations FOR booking RESULT result.
+
+    METHODS modify FOR BEHAVIOR
+      IMPORTING
+        roots_to_create FOR CREATE booking
+        roots_to_update FOR UPDATE booking
+        roots_to_delete FOR DELETE booking.
+
+*    METHODS create FOR MODIFY
+*      IMPORTING entities FOR CREATE booking.
+*
+*    METHODS update FOR MODIFY
+*      IMPORTING entities FOR UPDATE booking.
+*
+*    METHODS delete FOR MODIFY
+*      IMPORTING keys FOR DELETE booking.
+
+    METHODS read FOR BEHAVIOR
+      IMPORTING it_booking_key FOR READ booking RESULT et_booking.
+
+    METHODS lock FOR BEHAVIOR
+      IMPORTING it_booking_key FOR LOCK booking.
+
+ENDCLASS.
+
+CLASS lcl_handler IMPLEMENTATION.
+
+  METHOD get_instance_authorizations.
+  ENDMETHOD.
+
+  METHOD modify.
+
+    "------------------------------------------------
+    "Delete
+    LOOP AT roots_to_delete INTO DATA(ls_delete).
+
+      IF ls_delete-booking IS INITIAL.
+        ls_delete-booking = mapped-booking[ %cid = ls_delete-%cid_ref ]-booking.
+      ENDIF.
+
+      DATA(booking_bo) = zflt_booking_bo_ft=>get_factory_instance(
+        )->get_booking_instance_by_key(
+          bo_key      = ls_delete-booking
+          buffer_ind  = abap_true
+          "control_id  = ls_delete-%cid_ref
+          ).
+
+      booking_bo->delete( ).
+
+    ENDLOOP.
+
+    "------------------------------------------------
+    "Create
+    LOOP AT roots_to_create INTO DATA(ls_create).
+
+      booking_bo = zflt_booking_bo_ft=>get_factory_instance(
+         )->create_booking_instance(
+           "control_id   = ls_create-%cid
+           booking_data = CORRESPONDING #( ls_create-%data )
+*           control      = ls_create-%control
+            ).
+
+      "TODO: is dit nog nodig?
+      IF ls_create-%cid IS NOT INITIAL.
+        INSERT VALUE #( %cid = ls_create-%cid  booking = ls_create-booking ) INTO TABLE mapped-booking.
+      ENDIF.
+
+    ENDLOOP.
+
+    "------------------------------------------------
+    "Update
+    LOOP AT roots_to_update INTO DATA(ls_update).
+
+      IF ls_update-booking IS INITIAL.
+        ls_update-booking = mapped-booking[ %cid = ls_update-%cid_ref ]-booking.
+      ENDIF.
+
+      booking_bo = zflt_booking_bo_ft=>get_factory_instance(
+        )->get_booking_instance_by_key(
+          bo_key      = ls_update-booking
+          buffer_ind  = abap_true
+          "control_id  = ls_delete-%cid_ref
+          ).
+
+      booking_bo->update(
+        booking_data   = CORRESPONDING #( ls_update-%data )
+        control_fields = CORRESPONDING #( ls_update-%control ) ).
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD read.
+
+    "------------------------------------------------
+    "Read
+    LOOP AT it_booking_key INTO DATA(ls_booking_key).
+
+      DATA(booking_bo) = zflt_booking_bo_ft=>get_factory_instance(
+        )->get_booking_instance_by_key(
+          bo_key      = ls_booking_key-Booking
+          buffer_ind  = abap_true ).
+
+      DATA(booking_data) = booking_bo->get_data( ).
+
+      INSERT CORRESPONDING #( booking_data ) INTO TABLE et_booking.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD lock.
+    "provide the appropriate lock handling if required
+  ENDMETHOD.
+
+ENDCLASS.
+
+CLASS lcl_saver DEFINITION INHERITING FROM cl_abap_behavior_saver.
+
+  PROTECTED SECTION.
+    METHODS finalize          REDEFINITION.
+    METHODS check_before_save REDEFINITION.
+    METHODS save              REDEFINITION.
+
+ENDCLASS.
+
+CLASS lcl_saver IMPLEMENTATION.
+
+  METHOD save.
+
+    zflt_booking_bo_ft=>get_factory_instance( )->save( ).
+
+  ENDMETHOD.
+
+  METHOD finalize.
+  ENDMETHOD.
+
+  METHOD check_before_save.
+  ENDMETHOD.
+
+ENDCLASS.

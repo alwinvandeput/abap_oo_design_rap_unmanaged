@@ -1,0 +1,50 @@
+CLASS zflt_booking_bo_dp DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    TYPES:
+      t_key     type zflt_booking_bo_if=>t_key,
+      t_bo_data TYPE ztbooking_zzap.
+
+    CLASS-METHODS get_instance
+      IMPORTING key                  TYPE t_key
+      RETURNING VALUE(booking_bo_dp) TYPE REF TO zflt_booking_bo_dp.
+
+    METHODS get_bo_data
+      RETURNING VALUE(bo_data) TYPE t_bo_data.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    DATA key TYPE t_key.
+
+ENDCLASS.
+
+CLASS zflt_booking_bo_dp IMPLEMENTATION.
+
+  METHOD get_instance.
+
+    booking_bo_dp = NEW #( ).
+
+    booking_bo_dp->key = key.
+
+  ENDMETHOD.
+
+  METHOD get_bo_data.
+
+    SELECT SINGLE *
+      FROM ztbooking_zzap
+      WHERE booking = @me->key
+      INTO @bo_data.
+
+    IF sy-subrc <> 0.
+      ASSERT 1 = 2.
+    ENDIF.
+
+  ENDMETHOD.
+
+ENDCLASS.

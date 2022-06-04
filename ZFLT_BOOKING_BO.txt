@@ -1,0 +1,92 @@
+CLASS zflt_booking_bo DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC
+  INHERITING FROM zrap_business_object_bo
+  GLOBAL FRIENDS zflt_booking_bo_ft.
+
+  PUBLIC SECTION.
+
+    TYPES t_data TYPE ztbooking_zzap.
+
+    METHODS: get_key_string REDEFINITION.
+
+    INTERFACES zflt_booking_bo_if.
+
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+
+    DATA booking_data TYPE zflt_booking_bo_if~t_booking_data.
+
+ENDCLASS.
+
+CLASS zflt_booking_bo IMPLEMENTATION.
+
+  METHOD zflt_booking_bo_if~update.
+
+    "--------------------------------------------
+    "Map fields
+    DATA(struct_descr) =
+      CAST cl_abap_structdescr(
+        cl_abap_structdescr=>describe_by_data( me->booking_data ) ).
+
+    DATA(components) = struct_descr->get_components( ).
+
+    LOOP AT components
+      ASSIGNING FIELD-SYMBOL(<component>).
+
+      ASSIGN COMPONENT <component>-name
+        OF STRUCTURE control_fields
+        TO FIELD-SYMBOL(<control_field>).
+
+      IF sy-subrc <> 0.
+        CONTINUE.
+      ENDIF.
+
+      IF <control_field> IS INITIAL.
+        CONTINUE.
+      ENDIF.
+
+      ASSIGN COMPONENT <component>-name
+        OF STRUCTURE booking_data
+        TO FIELD-SYMBOL(<source_field>).
+
+      ASSIGN COMPONENT <component>-name
+        OF STRUCTURE me->booking_data
+        TO FIELD-SYMBOL(<target_field>).
+
+      <target_field> = <source_field>.
+
+    ENDLOOP.
+
+    "--------------------------------------------
+    "Set time stamp
+    GET TIME STAMP FIELD DATA(last_change_date).
+    me->booking_data-lastchangedat = last_change_date.
+
+    "--------------------------------------------
+    "Set persistence state
+    me->_rap_set_update( ).
+
+  ENDMETHOD.
+
+  METHOD zflt_booking_bo_if~get_data.
+
+    booking_data = me->booking_data.
+
+  ENDMETHOD.
+
+  METHOD zflt_booking_bo_if~delete.
+
+    me->_rap_set_delete( ).
+
+  ENDMETHOD.
+
+  METHOD get_key_string.
+
+    key = me->booking_data-booking.
+
+  ENDMETHOD.
+
+ENDCLASS.

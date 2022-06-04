@@ -1,0 +1,16 @@
+INTERFACE zflt_booking_bo_ft_if
+  PUBLIC .
+
+  METHODS create_booking_instance
+    IMPORTING booking_data       TYPE zflt_booking_bo_if=>t_booking_data
+
+    RETURNING VALUE(return_bo_instance) TYPE REF TO zflt_booking_bo_if.
+
+  METHODS get_booking_instance_by_key
+    IMPORTING bo_key             TYPE ztbooking_zzap-booking
+              buffer_ind         TYPE abap_bool
+    RETURNING VALUE(return_bo_instance) TYPE REF TO zflt_booking_bo_if.
+
+  METHODS save.
+
+ENDINTERFACE.
