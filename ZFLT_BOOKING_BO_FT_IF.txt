@@ -1,15 +1,20 @@
 INTERFACE zflt_booking_bo_ft_if
   PUBLIC .
 
-  METHODS create_booking_instance
-    IMPORTING booking_data       TYPE zflt_booking_bo_if=>t_booking_data
+  METHODS check_booking_exists
+    IMPORTING booking_id TYPE zflt_booking_bo_if=>t_booking_data-booking
+    RETURNING VALUE(booking_exists_ind) TYPE abap_bool.
 
-    RETURNING VALUE(return_bo_instance) TYPE REF TO zflt_booking_bo_if.
+  METHODS create_booking_bo
+    IMPORTING booking_data             TYPE zflt_booking_bo_if=>t_booking_data
+    RETURNING VALUE(return_booking_bo) TYPE REF TO zflt_booking_bo_if.
 
-  METHODS get_booking_instance_by_key
-    IMPORTING bo_key             TYPE ztbooking_zzap-booking
-              buffer_ind         TYPE abap_bool
-    RETURNING VALUE(return_bo_instance) TYPE REF TO zflt_booking_bo_if.
+  METHODS get_booking_bo_by_id
+    IMPORTING booking_id               TYPE ztbooking_zzap-booking
+              buffer_ind               TYPE abap_bool DEFAULT abap_false
+    RETURNING VALUE(return_booking_bo) TYPE REF TO zflt_booking_bo_if.
+
+  METHODS clear_buffer.
 
   METHODS save.
 
