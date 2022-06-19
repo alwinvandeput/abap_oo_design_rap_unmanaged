@@ -1,91 +1,62 @@
 CLASS zflt_booking_bo DEFINITION
   PUBLIC
   FINAL
-  CREATE PUBLIC
-  INHERITING FROM zrap_business_object_bo
+  CREATE PROTECTED
   GLOBAL FRIENDS zflt_booking_bo_ft.
 
   PUBLIC SECTION.
 
-    TYPES t_data TYPE ztbooking_zzap.
-
-    METHODS: get_key_string REDEFINITION.
-
     INTERFACES zflt_booking_bo_if.
+
+    TYPES t_data TYPE zflt_booking_dao_if=>t_booking_data.
 
   PROTECTED SECTION.
 
   PRIVATE SECTION.
 
-    DATA booking_data TYPE zflt_booking_bo_if~t_booking_data.
+    DATA booking_dao TYPE REF TO zflt_booking_dao_if.
 
 ENDCLASS.
 
 CLASS zflt_booking_bo IMPLEMENTATION.
 
-  METHOD zflt_booking_bo_if~update.
+  METHOD zflt_booking_bo_if~get_booking_id.
 
-    "--------------------------------------------
-    "Map fields
-    DATA(struct_descr) =
-      CAST cl_abap_structdescr(
-        cl_abap_structdescr=>describe_by_data( me->booking_data ) ).
+    booking_id = me->booking_dao->get_booking_id( ).
 
-    DATA(components) = struct_descr->get_components( ).
+  ENDMETHOD.
 
-    LOOP AT components
-      ASSIGNING FIELD-SYMBOL(<component>).
+  METHOD zflt_booking_bo_if~update_data.
 
-      ASSIGN COMPONENT <component>-name
-        OF STRUCTURE control_fields
-        TO FIELD-SYMBOL(<control_field>).
+    DATA(temp_booking_data) = booking_data.
 
-      IF sy-subrc <> 0.
-        CONTINUE.
-      ENDIF.
+    DATA(dao_field_flags) = CORRESPONDING zflt_booking_dao_if=>t_field_flags( field_flags ).
 
-      IF <control_field> IS INITIAL.
-        CONTINUE.
-      ENDIF.
-
-      ASSIGN COMPONENT <component>-name
-        OF STRUCTURE booking_data
-        TO FIELD-SYMBOL(<source_field>).
-
-      ASSIGN COMPONENT <component>-name
-        OF STRUCTURE me->booking_data
-        TO FIELD-SYMBOL(<target_field>).
-
-      <target_field> = <source_field>.
-
-    ENDLOOP.
-
-    "--------------------------------------------
-    "Set time stamp
     GET TIME STAMP FIELD DATA(last_change_date).
-    me->booking_data-lastchangedat = last_change_date.
+    temp_booking_data-lastchangedat = last_change_date.
+    dao_field_flags-lastchangedat = abap_true.
 
-    "--------------------------------------------
-    "Set persistence state
-    me->_rap_set_update( ).
+    me->booking_dao->update_data(
+      booking_data = temp_booking_data
+      field_flags  = dao_field_flags ).
 
   ENDMETHOD.
 
   METHOD zflt_booking_bo_if~get_data.
 
-    booking_data = me->booking_data.
+    booking_data = me->booking_dao->get_data( ).
 
   ENDMETHOD.
 
   METHOD zflt_booking_bo_if~delete.
 
-    me->_rap_set_delete( ).
+    me->booking_dao->delete( ).
 
   ENDMETHOD.
 
-  METHOD get_key_string.
+  METHOD zflt_booking_bo_if~save.
 
-    key = me->booking_data-booking.
+    me->booking_dao->save( ).
 
   ENDMETHOD.
 
