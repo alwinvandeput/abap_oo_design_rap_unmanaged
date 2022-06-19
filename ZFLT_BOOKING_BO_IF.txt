@@ -3,29 +3,22 @@ INTERFACE zflt_booking_bo_if
 
   TYPES t_key TYPE ztbooking_zzap-booking.
 
-  TYPES t_booking_data TYPE zflt_booking_bo_dp=>t_bo_data.
+  TYPES t_booking_data TYPE zflt_booking_bo=>t_data.
 
-  TYPES:
-    update_code TYPE c LENGTH 2,
-    BEGIN OF t_control_fields,
-      customername       TYPE update_code,
-      numberofpassengers TYPE update_code,
-      emailaddress       TYPE update_code,
-      country            TYPE update_code,
-      dateofbooking      TYPE update_code,
-      dateoftravel       TYPE update_code,
-      cost               TYPE update_code,
-      currencycode       TYPE update_code,
-      lastchangedat      TYPE update_code,
-    END OF t_control_fields.
+  TYPES t_field_flags TYPE zflt_booking_dao_if=>t_change_field_flags.
 
-  METHODS update
-    IMPORTING booking_data   TYPE t_booking_data
-              control_fields TYPE t_control_fields.
+  METHODS get_booking_id
+    RETURNING VALUE(booking_id) TYPE t_booking_data-booking.
 
   METHODS get_data
     RETURNING VALUE(booking_data) TYPE t_booking_data.
 
+  METHODS update_data
+    IMPORTING booking_data TYPE t_booking_data
+              field_flags  TYPE t_field_flags.
+
   METHODS delete.
+
+  METHODS save.
 
 ENDINTERFACE.
